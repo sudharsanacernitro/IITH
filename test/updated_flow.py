@@ -6,12 +6,12 @@ import os
 from local_file_upload import localFeature
 
 # Initialize Earth Engine
-ee.Initialize(project='cobalt-mantis-420410')
+ee.Initialize(project='ee-sudharsanr836')
 
 # --- Inputs ---
-roi = localFeature("test/ujjain_dist_shp/ujjain_dst.shp")
-prediction_patch_ujjain = localFeature("test/dataPoints/AllMarkersExport.shp")
-ujjain_crop_gt_inc = localFeature("test/dataPoints/AllMarkersExport.shp")
+roi = localFeature("ujjain_dist_shp/ujjain_dst.shp")
+prediction_patch_ujjain = localFeature("dataPoints/AllMarkersExport.shp")
+ujjain_crop_gt_inc = localFeature("dataPoints/AllMarkersExport.shp")
 
 start_s1 = '2023-10-01'
 end_s1 = '2024-04-30'
