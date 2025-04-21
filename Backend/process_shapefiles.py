@@ -121,9 +121,8 @@ def process_crop_time_series(roi_path, markers_path, start_s1, end_s1, start_s2,
 
 
 # --- Main Entry ---
-def main():
-    roi_path = "ujjain_dist_shp/ujjain_dst.shp"
-    markers_path = "dataPoints/AllMarkersExport.shp"
+def Process(boundry_path,markers_path):
+    
     project_name = "ujjain"
     output_folder = f"Crop_mapping_{project_name}"
 
@@ -134,7 +133,7 @@ def main():
     end_s2 = '2024-04-30'
 
     process_crop_time_series(
-        roi_path=roi_path,
+        roi_path=boundry_path,
         markers_path=markers_path,
         start_s1=start_s1,
         end_s1=end_s1,
@@ -146,4 +145,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    Process()
