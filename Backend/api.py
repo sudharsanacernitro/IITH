@@ -5,6 +5,8 @@ import folium
 import zipfile
 import tempfile
 import os
+import glob
+
 
 
 from process_shapefiles import Process
@@ -142,11 +144,20 @@ def upload_markers():
 
 
 @app.route('/processShapefiles', methods=['GET'])
-def upload_shapefile():
+def processShapeFiles():
 
-    roi_path = "ujjain_dist_shp/ujjain_dst.shp"
-    markers_path = "dataPoints/AllMarkersExport.shp"
+    directory = '/home/sudharsan/projects/CropMapping/Backend/uploads'
+    shp_files = glob.glob(f'{directory}/**/*.shp', recursive=True)
 
+
+    roi_path = shp_files[0]
+    markers_path = shp_files[1]
+    
+    processShapeFiles = Process(roi_path, markers_path)
+
+
+
+    return '', 200
 
 
 if __name__ == '__main__':

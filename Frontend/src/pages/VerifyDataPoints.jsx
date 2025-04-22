@@ -54,9 +54,22 @@ function VerifyDataPoints() {
       );
     }
 
-    function moveToNext()
+    async function processShapeFiles ()
     {
-        navigate('/VerifyDataPoints');
+        try {
+      const response = await fetch('http://localhost:5000/processShapefiles', {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      window.alert("Your csv file created successfully");
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+    }
     }
 
 
@@ -96,7 +109,7 @@ function VerifyDataPoints() {
                 </div>
 
 
-                <button className='p-2 bg-blue-400 rounded-2xl' onClick={moveToNext}> Proceed</button>
+                <button className='p-2 bg-blue-400 rounded-2xl' onClick={processShapeFiles}> Proceed</button>
 
                 </div>
             }
