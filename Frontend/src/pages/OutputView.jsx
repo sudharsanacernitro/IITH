@@ -5,7 +5,7 @@ const ImageViewer = ({ url }) => {
     <img
       src={url}
       alt="Loaded"
-      style={{ maxWidth: "100%", height: "auto" }}
+      style={{ maxWidth: "100%", height: "100%" }}
       onError={(e) => console.error("Failed to load image:", e)}
     />
   );
@@ -13,9 +13,11 @@ const ImageViewer = ({ url }) => {
 
 function OutputViewer() {
   return (
-    <>
-      <ImageViewer url="http://localhost:5000/Output" />
-    </>
+    <div className="w-full h-screen flex justify-center items-center ">
+      <div className="w-[80%] h-[90%] border-2 border-black rounded-2xl">
+            <ImageViewer url="http://localhost:5000/Output" />
+      </div>
+    </div>
   );
 }
 
