@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file , send_from_directory
 from flask_cors import CORS
 import geopandas as gpd
 import folium
@@ -7,12 +7,15 @@ import tempfile
 import os
 import glob
 
+import rasterio
+from PIL import Image
+import numpy as np
 
 
 from process_shapefiles import Process
 from preProcess import PreProcess_PipeLine
 from modelCreationp import modelCreation_PipeLine
-
+from prediction import prediction_PipeLine
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -166,10 +169,42 @@ def processShapeFiles():
         n_trees=500
     )
 
-
+    prediction_PipeLine('ujjain')
 
     return '', 200
 
 
+@app.route("/tif",methods=['GET'])
+def serve_tif():
+
+    project="ujjain"
+    path=f"Crop_mapping_{project}/Predicted_Cropmap/output.tif"
+
+    convert_raster(path, "output.png")
+    
+    
+    return send_from_directory(f"Crop_mapping_{project}/Predicted_Cropmap/","output.tif")
+
+
+
+def convert_raster(input_path, output_path):
+    with rasterio.open(input_path) as src:
+        count = src.count
+
+        if count == 1:
+            # Grayscale
+            img_array = src.read(1)
+            img_array = ((img_array - img_array.min()) / (img_array.max() - img_array.min()) * 255).astype(np.uint8)
+            img = Image.fromarray(img_array, mode="L")
+        elif count >= 3:
+            # RGB
+            img_array = src.read([1, 2, 3])
+            img_array = np.transpose(img_array, (1, 2, 0))  # (bands, height, width) -> (height, width, bands)
+            img_array = ((img_array - img_array.min()) / (img_array.max() - img_array.min()) * 255).astype(np.uint8)
+            img = Image.fromarray(img_array, mode="RGB")
+        else:
+            raise ValueError("Unsupported band count")
+
+        img.save(output_path)
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

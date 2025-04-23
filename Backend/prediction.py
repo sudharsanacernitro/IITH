@@ -1,87 +1,56 @@
+import os
+import re
 import numpy as np
 import rasterio
-#from rasterio.transform import from_origin
-#from rasterio.enums import Resampling
 import matplotlib.pyplot as plt
 import joblib
 from sklearn.utils.validation import check_is_fitted
-import re  # Add import for regular expressions
-import os  # Add import for file operations
 
-def crop_map_prediction(input_raster_path, model_path, output_raster_path):
-    # Ensure the output directory exists
-    output_dir = os.path.dirname(output_raster_path)
-    os.makedirs(output_dir, exist_ok=True)
-    
-    raster = rasterio.open(input_raster_path)
-    
-    # Get the geotransform and projection
-    gt = raster.transform
-    proj = raster.crs.to_wkt()
-    
+def ensure_output_directory(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+def load_raster(raster_path):
+    raster = rasterio.open(raster_path)
     array = raster.read()
-    print(array.shape)
-    
-    # Reshape array
-    new_shape = (array.shape[0], array.shape[1] * array.shape[2])
-    reshaped_stacked_array = array.reshape(new_shape)
-    print(reshaped_stacked_array.shape)
-    
-    # Swap axes for prediction
-    array_for_prediction = np.swapaxes(reshaped_stacked_array, 0, 1)
-    print(array_for_prediction.shape)
-    print(array_for_prediction)
-      
-    
-    # load model
-    loaded_model = joblib.load(model_path)
-    
-    # Ensure the model is fitted
-    check_is_fitted(loaded_model)
-    
-    # Suppress feature name warning by ensuring compatibility
-    if hasattr(loaded_model, "feature_names_in_"):
-        loaded_model.feature_names_in_ = None
-    
-    # pred for full image
-    pred = loaded_model.predict(array_for_prediction)
-    print(pred.shape)
-    print(np.unique(pred))
-    
-    pred_final=pred.reshape(array.shape[1], array.shape[2])
-    print(pred_final.shape)
-    
-    predimg= pred_final[:,:]
-    plt.imshow(predimg)
-    
-    
-    # write predicted array using rasterio
-    
-    # Get the dimensions of the array
-    height, width = pred_final.shape
-    
-    # Create the output raster dataset using rasterio
+    return raster, array
+
+def reshape_raster_for_prediction(array):
+    reshaped_array = array.reshape((array.shape[0], array.shape[1] * array.shape[2]))
+    array_for_prediction = np.swapaxes(reshaped_array, 0, 1)
+    return array_for_prediction
+
+def load_trained_model(model_path):
+    model = joblib.load(model_path)
+    check_is_fitted(model)
+    if hasattr(model, "feature_names_in_"):
+        model.feature_names_in_ = None  # To suppress feature name warning
+    return model
+
+def predict_crop_map(model, data, original_shape):
+    pred = model.predict(data)
+    pred_reshaped = pred.reshape(original_shape[1], original_shape[2])
+    return pred_reshaped
+
+def save_prediction_raster(output_path, data, reference_raster):
+    ensure_output_directory(output_path)
     with rasterio.open(
-        output_raster_path,
+        output_path,
         'w',
         driver='GTiff',
-        height=height,
-        width=width,
+        height=data.shape[0],
+        width=data.shape[1],
         count=1,
-        dtype=array.dtype,
-        crs=proj,
-        transform=gt,
+        dtype=data.dtype,
+        crs=reference_raster.crs.to_wkt(),
+        transform=reference_raster.transform,
     ) as dst:
-        # Write the array to the output raster
-        dst.write(pred_final, 1)
-    
- 
-    
- 
-project_name = "ujjain"  # Update this variable as needed
-project_dir = f"Crop_mapping_{project_name}"
+        dst.write(data, 1)
 
-input_raster_path = rf"{project_dir}/raster_stack/S1S2_Ujjain_Rabi_Prediction_stack.tif"
+def display_prediction(prediction_array):
+    plt.imshow(prediction_array, cmap='viridis')
+    plt.title("Predicted Crop Map")
+    plt.colorbar()
+    plt.show()
 
 def get_accuracy_from_filename(filename):
     match = re.search(r"_([\d.]+)\.joblib$", filename)
@@ -93,13 +62,38 @@ def find_model_file(directory, prefix, extension):
             return file
     raise FileNotFoundError(f"No file found with prefix '{prefix}' and extension '{extension}' in directory '{directory}'.")
 
-# Dynamically determine model path and accuracy
-model_dir = rf"{project_dir}/metrics"
-model_filename = find_model_file(model_dir, "BRF_crops3inc_multiclass", ".joblib")
-accuracy = get_accuracy_from_filename(model_filename)
-model_path = rf"{model_dir}/{model_filename}"
+def crop_map_prediction_pipeline(input_raster_path, model_path, output_raster_path):
+    raster, array = load_raster(input_raster_path)
+    print("Original raster shape:", array.shape)
 
-# Update output path to include accuracy
-output_raster_path = rf"{project_dir}/Predicted_Cropmap/BRF_crops3inc_multiclass_{accuracy}_v01.tif"
+    prediction_input = reshape_raster_for_prediction(array)
+    print("Prepared input shape:", prediction_input.shape)
 
-crop_map_prediction(input_raster_path=input_raster_path, model_path=model_path, output_raster_path=output_raster_path)
+    model = load_trained_model(model_path)
+    prediction = predict_crop_map(model, prediction_input, array.shape)
+
+    print("Prediction shape:", prediction.shape)
+    print("Unique classes predicted:", np.unique(prediction))
+
+    display_prediction(prediction)
+    save_prediction_raster(output_raster_path, prediction, raster)
+    print(f"Saved prediction raster at: {output_raster_path}")
+
+def prediction_PipeLine(project_name="ujjain"):
+    project_dir = f"Crop_mapping_{project_name}"
+
+    input_raster_path = os.path.join(project_dir, "raster_stack", f"S1S2_{project_name.capitalize()}_Rabi_Prediction_stack.tif")
+
+    model_dir = os.path.join(project_dir, "metrics")
+    model_filename = find_model_file(model_dir, "BRF_crops3inc_multiclass", ".joblib")
+    accuracy = get_accuracy_from_filename(model_filename)
+    model_path = os.path.join(model_dir, model_filename)
+
+    output_raster_path = os.path.join(
+        project_dir, "Predicted_Cropmap", f"output.tif"
+    )
+
+    crop_map_prediction_pipeline(input_raster_path, model_path, output_raster_path)
+
+if __name__ == "__main__":
+    prediction_PipeLine("ujjain")

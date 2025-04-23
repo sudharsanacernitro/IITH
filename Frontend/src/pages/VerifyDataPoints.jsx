@@ -65,7 +65,7 @@ function VerifyDataPoints() {
         throw new Error('Upload failed');
       }
 
-      window.alert("Your csv file created successfully");
+      navigate('/Output');
       
     } catch (err) {
       console.error('Upload error:', err);
