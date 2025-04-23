@@ -174,16 +174,17 @@ def processShapeFiles():
     return '', 200
 
 
-@app.route("/tif",methods=['GET'])
+@app.route("/Output",methods=['GET'])
 def serve_tif():
 
     project="ujjain"
-    path=f"Crop_mapping_{project}/Predicted_Cropmap/output.tif"
+    InputPath=f"Crop_mapping_{project}/Predicted_Cropmap/output.tif"
+    OutputPath=f"Crop_mapping_{project}/Predicted_Cropmap/output.png"
 
-    convert_raster(path, "output.png")
+    convert_raster(InputPath,OutputPath)
     
     
-    return send_from_directory(f"Crop_mapping_{project}/Predicted_Cropmap/","output.tif")
+    return send_from_directory(f"Crop_mapping_{project}/Predicted_Cropmap/","output.png")
 
 
 
