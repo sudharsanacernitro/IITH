@@ -10,6 +10,8 @@ import glob
 
 
 from process_shapefiles import Process
+from preProcess import PreProcess_PipeLine
+from modelCreationp import modelCreation_PipeLine
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -154,6 +156,15 @@ def processShapeFiles():
     markers_path = shp_files[1]
     
     processShapeFiles = Process(roi_path, markers_path)
+
+    PreProcess_PipeLine(project_name="ujjain")
+
+    modelCreation_PipeLine(
+        project_name="ujjain",
+        sample_size=400,
+        test_size=0.33,
+        n_trees=500
+    )
 
 
 
